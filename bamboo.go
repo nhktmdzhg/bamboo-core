@@ -50,6 +50,7 @@ type IEngine interface {
 	RemoveLastChar(bool)
 	RestoreLastWord(bool)
 	Reset()
+	RebuildEngineFromText(string)
 }
 
 type BambooEngine struct {
