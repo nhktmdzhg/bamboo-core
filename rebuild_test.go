@@ -106,3 +106,64 @@ func TestRebuildFromText_CompareWithProcessString(t *testing.T) {
 	}
 	t.Logf("ProcessString('goo') = %q, RebuildFromText('goo') = %q", buggyResult, correctResult)
 }
+
+func TestRebuildFromText_WithPunctuationAndSpace(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"vãi", "vãi", "vãi"},
+		{"vãi.", "vãi.", "vãi."},
+		{"vãi ", "vãi ", "vãi "},
+		{"vãi. ", "vãi. ", "vãi. "},
+		{"chào.", "chào.", "chào."},
+		{"chào. ", "chào. ", "chào. "},
+		{"chào, ", "chào, ", "chào, "},
+		{"chào. Xin", "chào. Xin", "chào. Xin"},
+		{"vãi, ", "vãi, ", "vãi, "},
+		{"vãi! ", "vãi! ", "vãi! "},
+		{"vãi? ", "vãi? ", "vãi? "},
+		{"vãi; ", "vãi; ", "vãi; "},
+		{"vãi: ", "vãi: ", "vãi: "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			composition := RebuildCompositionFromText(tt.input, true)
+			result := Flatten(composition, VietnameseMode)
+			if result != tt.want {
+				t.Errorf("RebuildFromText(%q) = %q, want %q", tt.input, result, tt.want)
+			}
+		})
+	}
+}
+
+// Test RebuildEngineFromText with punctuation and space
+func TestRebuildEngineFromText_WithPunctuationAndSpace(t *testing.T) {
+	im := ParseInputMethod(GetInputMethodDefinitions(), "Telex")
+	engine := NewEngine(im, EstdFlags)
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"vãi", "vãi", "vãi"},
+		{"vãi.", "vãi.", "vãi."},
+		{"vãi ", "vãi ", "vãi "},
+		{"vãi. ", "vãi. ", "vãi. "},
+		{"chào.", "chào.", "chào."},
+		{"chào. ", "chào. ", "chào. "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine.RebuildEngineFromText(tt.input)
+			result := engine.GetProcessedString(VietnameseMode | FullText)
+			if result != tt.want {
+				t.Errorf("RebuildEngineFromText(%q) = %q, want %q", tt.input, result, tt.want)
+			}
+		})
+	}
+}

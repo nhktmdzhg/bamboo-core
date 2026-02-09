@@ -17,7 +17,61 @@ import (
 func RebuildCompositionFromText(text string, stdStyle bool) []*Transformation {
 	var composition []*Transformation
 
+	// Split text into words by word break symbols (punctuation, spaces, etc.)
+	words := splitTextIntoWords(text)
+
+	for _, word := range words {
+		wordComposition := processWordToComposition(word, stdStyle)
+		composition = append(composition, wordComposition...)
+	}
+
+	return composition
+}
+
+// splitTextIntoWords splits text into words, preserving delimiters
+func splitTextIntoWords(text string) []string {
+	var words []string
+	var currentWord []rune
+
 	for _, ch := range text {
+		if IsWordBreakSymbol(ch) {
+			if len(currentWord) > 0 {
+				words = append(words, string(currentWord))
+				currentWord = nil
+			}
+			words = append(words, string(ch))
+		} else {
+			currentWord = append(currentWord, ch)
+		}
+	}
+
+	if len(currentWord) > 0 {
+		words = append(words, string(currentWord))
+	}
+
+	return words
+}
+
+// processWordToComposition converts a word into transformations
+func processWordToComposition(word string, stdStyle bool) []*Transformation {
+	var composition []*Transformation
+
+	if len(word) == 1 && IsWordBreakSymbol([]rune(word)[0]) {
+		ch := []rune(word)[0]
+		isUpperCase := unicode.IsUpper(ch)
+		appendTrans := &Transformation{
+			IsUpperCase: isUpperCase,
+			Rule: Rule{
+				Key:        ch,
+				EffectOn:   ch,
+				EffectType: Appending,
+				Result:     ch,
+			},
+		}
+		return []*Transformation{appendTrans}
+	}
+
+	for _, ch := range word {
 		lowerCh := unicode.ToLower(ch)
 		isUpperCase := unicode.IsUpper(ch)
 
@@ -63,7 +117,7 @@ func RebuildCompositionFromText(text string, stdStyle bool) []*Transformation {
 
 	// Apply tones
 	var lastTone Tone = ToneNone
-	for _, ch := range text {
+	for _, ch := range word {
 		lowerCh := unicode.ToLower(ch)
 		t := FindToneFromChar(lowerCh)
 		if t != ToneNone {
